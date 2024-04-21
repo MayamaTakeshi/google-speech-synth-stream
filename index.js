@@ -60,32 +60,33 @@ class GssStream extends Readable {
     };
 
     // Performs the text-to-speech request
-    console.log("p1")
     const [response] = await client.synthesizeSpeech(request);
-    console.log("p2")
     // Write the binary audio content to a local file
     const writeFile = util.promisify(fs.writeFile);
-    console.log("p3")
     await writeFile(this.outputFile, response.audioContent, 'binary');
-    console.log("p4")
 
     const file = fs.createReadStream(this.outputFile)
-    console.log("p5")
 
     const reader = new wav.Reader()
 
     file.pipe(reader)
 
     reader.on('format', format => {
+      console.log('reader format')
       this.read_stream = reader           
-      this.speak_complete_notified = false
       this.eventEmitter.emit('ready')
     })
 
-    reader.on('end', () => {
-      this.read_stream = null
+    file.on('end', () => {
+      console.log('file end')
+
+      console.log("unlinking", this.outputFile)
+      fs.unlink(this.outputFile, err => {
+        console.log("fs.unlink cb", err)
+      })
+
+      this.outputFile = null
     })
-    console.log("p6")
   }
 
   on(evt, cb) {
@@ -97,26 +98,18 @@ class GssStream extends Readable {
   _read(size) {
     console.log("_read", size)
     if(!this.read_stream) {
-      if(!this.speak_complete_notified) {
-        this.eventEmitter.emit('speak_complete')
-        this.speak_complete_notified = true
-      }
-      pushSilence(this.format, this, 640)
+      console.log("call pushSilence")
+      pushSilence(this.format, this, 320)
       return
     }
     const data = this.read_stream.read(size)
+    console.log("_read got", data)
     if(data) {
       this.push(data)
-    }
-  }
-
-  _destroy(err, cb) {
-    console.log("_destroy")
-    if(this.outputFile) {
-      console.log("unlinking", this.outputFile)
-      fs.unlink(this.outputFile, err => {
-        console.log("fs.unlink cb", err)
-      })
+    } else {
+      //end of stream
+      this.read_stream =null
+      pushSilence(this.format, this, 320)
     }
   }
 }

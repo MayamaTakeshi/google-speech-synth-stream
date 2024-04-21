@@ -31,34 +31,38 @@ const opts = {
 
 const gs = new GSSS(opts)
 gs.on('speak_complete', () => {
-	console.log('speak_complete')
+	console.log('gs speak_complete')
 })
 gs.on('error', err => {
-	console.log('error', err)
+	console.log('gs error', err)
 })
-gs.speak(params)
+gs.on('end', () => {
+	console.log('gs end')
+})
+gs.speak(params) // this first speak gets raspy
 
 const speaker = new Speaker(format)
 
 gs.on('ready', () => {
-	console.log('ready')
-	//gs.pipe(speaker)
+	console.log('ready p1')
 
 	setInterval(() => {
-		const data = gs.read(640)
-		console.log(data)
+		const data = gs.read(320)
+		console.log('read data', data)
 		if(data) {
-		  //console.log(data)
-		  speaker.write(data)
+			speaker.write(data)
 		}
 	}, 20)
-
-	setTimeout(() => {
-		console.log('done')
-		gs.destroy()
-	        setTimeout(() => {
-			process.exit(0)
-		}, 500)
-	}, 2000)
+	console.log('ready p2')
 })
 
+// these two speak are clean. Why?
+setTimeout(() => {
+	console.log('done')
+	gs.speak(params)
+}, 2000)
+
+setTimeout(() => {
+	console.log('done')
+	gs.speak(params)
+}, 3500)

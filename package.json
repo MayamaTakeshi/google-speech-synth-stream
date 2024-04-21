@@ -1,0 +1,26 @@
+{
+  "name": "google-speech-synth-stream",
+  "version": "1.0.0",
+  "description": "A simple node.js readable stream that permits to stream audio from google tts",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "google",
+    "tts",
+    "speech",
+    "synth",
+    "stream",
+    "audio"
+  ],
+  "author": "MayamaTakeshi",
+  "license": "MIT",
+  "dependencies": {
+    "@google-cloud/text-to-speech": "^5.2.0",
+    "wav": "^1.0.2"
+  },
+  "devDependencies": {
+    "speaker": "^0.5.4"
+  }
+}

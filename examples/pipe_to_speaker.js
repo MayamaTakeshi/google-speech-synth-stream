@@ -1,6 +1,5 @@
 const Speaker = require('speaker')
 const GSSS = require('../index.js')
-const silence = require('../silence.js')
 
 const format = {
   audioFormat: 1,
@@ -13,14 +12,6 @@ const format = {
   signed: true
 }
 
-const params = {
-	body: 'hello world',
-	headers: {
-		'speech-language': 'en-US',
-		'voice-name': 'en-US-Standard-G',
-	},
-}
-
 const config = {
 	work_dir: './tmp',
 }
@@ -31,21 +22,15 @@ const opts = {
 }
 
 const gs = new GSSS(opts)
-gs.on('speak_complete', () => {
-	console.log('gs speak_complete')
+gs.speak({
+	body: 'hello world',
+	headers: {
+		'speech-language': 'en-US',
+		'voice-name': 'en-US-Standard-G',
+	},
 })
-gs.on('error', err => {
-	console.log('gs error', err)
+
+gs.on('ready', () => {
+  const speaker = new Speaker(format)
+  gs.pipe(speaker)
 })
-gs.on('end', () => {
-	console.log('gs end')
-})
-gs.speak(params)
-
-const speaker = new Speaker(format)
-
-gs.pipe(speaker)
-
-setTimeout(() => {
-  console.log('done')
-}, 2000)

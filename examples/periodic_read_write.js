@@ -87,7 +87,10 @@ const read_write = () => {
         // no more data.
         setTimeout(() => {
           console.log("done")
-          process.exit(0)
+          writer.end(err => {
+            console.log('writer.end done', err)
+            process.exit(0)
+          })
         }, 500)
       }
       console.log("writing silence", size)

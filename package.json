@@ -22,5 +22,12 @@
   },
   "devDependencies": {
     "speaker": "^0.5.4"
-  }
+  },
+  "files": [
+    "index.js",
+    "src",
+    "lib",
+    "README.md",
+    "LICENSE"
+  ]
 }

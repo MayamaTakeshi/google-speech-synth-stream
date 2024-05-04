@@ -59,6 +59,7 @@ class GssStream extends Readable {
 
     // Performs the text-to-speech request
     const [response] = await client.synthesizeSpeech(request);
+
     // Write the binary audio content to a local file
     const writeFile = util.promisify(fs.writeFile);
     await writeFile(this.outputFile, response.audioContent, 'binary');
@@ -70,17 +71,18 @@ class GssStream extends Readable {
     file.pipe(reader)
 
     reader.on('format', format => {
-      console.log('reader format')
+      //console.log('reader format', format)
       this.read_stream = reader           
       this.eventEmitter.emit('ready')
+      this.eventEmitter.emit('data', Buffer.alloc(0)) // necessary for piping
     })
 
     file.on('end', () => {
-      console.log('file end')
+      //console.log('file end')
 
-      console.log("unlinking", this.outputFile)
+      //console.log("unlinking", this.outputFile)
       fs.unlink(this.outputFile, err => {
-        console.log("fs.unlink cb", err)
+        //console.log("fs.unlink cb", err)
       })
 
       this.outputFile = null
@@ -94,14 +96,14 @@ class GssStream extends Readable {
   }
 
   _read(size) {
-    console.log("_read", size)
+    //console.log("_read", size)
     if(!this.read_stream) {
       this.push(Buffer.alloc(0))
       return
     }
 
     const data = this.read_stream.read(size)
-    console.log("_read got", data)
+    //console.log("_read got", data)
     if(data) {
       this.push(data)
     } {

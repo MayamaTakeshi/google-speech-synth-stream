@@ -1,8 +1,25 @@
 const Speaker = require('speaker')
 const GSSS = require('../index.js')
-const silence = require('../silence.js')
 const wav = require('wav')
 const fs = require('fs')
+
+function gen_silence(format, size) {
+  var silence = null
+
+  if(format.audioFormat == 6) {
+    if(format.signed) {
+      silence = Buffer.alloc(size, 0x55); // ALAW silence value signed
+    } else {
+      silence = Buffer.alloc(size, 0xD5); // ALAW silence value unsigned
+    }
+  } else if(format.audioFormat == 7) {
+    silence = Buffer.alloc(size, 0xFF); // MULAW silence value
+  } else {
+    // assume L16
+    silence = Buffer.alloc(size, 0);
+  }
+  return silence;
+}
 
 const format = {
   audioFormat: 1,
@@ -54,6 +71,8 @@ const fileStream = fs.createWriteStream(outputFile);
 // Pipe the WAV writer to the file stream
 writer.pipe(fileStream);
 
+var started = false
+
 const read_write = () => {
 		const size = 320 * format.sampleRate/8000
 		var data = gs.read(size)
@@ -62,9 +81,17 @@ const read_write = () => {
 		  console.log("writing data")
 			speaker.write(data)
 			writer.write(data)
+      started = true
 		} else {
+      if(started) {
+        // no more data.
+        setTimeout(() => {
+          console.log("done")
+          process.exit(0)
+        }, 500)
+      }
       console.log("writing silence", size)
-      data = silence.gen(format, size)
+      data = gen_silence(format, size)
    	  speaker.write(data)
      	writer.write(data)
 		}
@@ -76,19 +103,9 @@ const read_write = () => {
 // so we need to buffer something to avoid this.
 const size = 320 * 64 // tried with 32, 16, 8 and 4. The lower the multiplier, the more scratchynes we get
 console.log("writing initial silence to speaker", size)
-data = silence.gen(format, size)
+data = gen_silence(format, size)
 speaker.write(data)
 
 setInterval(() => {
   read_write()
 }, 20)
-
-setTimeout(() => {
-	console.log('done')
-	gs.speak(params)
-}, 2000)
-
-setTimeout(() => {
-	console.log('done')
-	gs.speak(params)
-}, 3500)

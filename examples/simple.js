@@ -54,9 +54,6 @@ const fileStream = fs.createWriteStream(outputFile);
 // Pipe the WAV writer to the file stream
 writer.pipe(fileStream);
 
-//gs.on('ready', () => {
-//	console.log('ready p1')
-
 const read_write = () => {
 		const size = 320 * format.sampleRate/8000
 		var data = gs.read(size)
@@ -72,10 +69,13 @@ const read_write = () => {
      	writer.write(data)
 		}
 }
-//	console.log('ready p2')
-//})
-//console.log("first read_write()")
-//read_write()
+
+
+// We need to write some initial silence to the speaker to avoid scratchyness
+const size = 320 * 64 // tried with 32, 16, 8 and 4. The lower the multiplier, the more scratchynes we get
+console.log("writing initial silence to speaker", size)
+data = silence.gen(format, size)
+speaker.write(data)
 
 setInterval(() => {
   read_write()

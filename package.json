@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "A simple node.js readable stream that permits to stream audio from google tts",
   "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MayamaTakeshi/google-speech-synth-stream.git"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

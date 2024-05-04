@@ -72,6 +72,8 @@ const read_write = () => {
 
 
 // We need to write some initial silence to the speaker to avoid scratchyness
+// I understand this happens because the speaker writable stream is being underfed
+// so we need to buffer something to avoid this.
 const size = 320 * 64 // tried with 32, 16, 8 and 4. The lower the multiplier, the more scratchynes we get
 console.log("writing initial silence to speaker", size)
 data = silence.gen(format, size)

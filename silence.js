@@ -4,22 +4,7 @@ a-law: silence is either a payload entirely populated with 0x55 or 0xD5 (dependi
 u-law: silence is a payload entirely populated with 0xFF.
 */
 
-function pushSilenceL16(stream, size) {
-    const silence = Buffer.alloc(size, 0); // Assuming 0 represents silence
-    stream.push(silence);
-}
-
-function pushSilenceALaw(stream, size) {
-    const silence = Buffer.alloc(size, 0x55); // ALAW silence value
-    stream.push(silence);
-}
-
-function pushSilenceMuLaw(stream, size) {
-    const silence = Buffer.alloc(size, 0x7F); // MULAW silence value
-    stream.push(silence);
-}
-
-function pushSilence(format, stream, size) {
+function gen(format, size) {
   var silence = null
 
   if(format.audioFormat == 6) {
@@ -34,8 +19,17 @@ function pushSilence(format, stream, size) {
     // assume L16
     silence = Buffer.alloc(size, 0);
   }
-  console.log("pushingSilence", silence)
+  return silence;
+} 
+
+
+function push(format, stream, size) {
+  var silence = genSilence(format, size)
+  console.log("silence.push", silence)
   stream.push(silence);
 } 
 
-module.exports = pushSilence
+module.exports = {
+	gen,
+	push,
+}

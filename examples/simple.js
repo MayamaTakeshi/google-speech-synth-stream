@@ -1,11 +1,14 @@
 const Speaker = require('speaker')
 const GSSS = require('../index.js')
+const silence = require('../silence.js')
+const wav = require('wav')
+const fs = require('fs')
 
 const format = {
   audioFormat: 1,
   endianness: 'LE',
   channels: 1,
-  sampleRate: 8000,
+  sampleRate: 16000,
   byteRate: 16000,
   blockAlign: 2,
   bitDepth: 16,
@@ -43,20 +46,41 @@ gs.speak(params) // this first speak gets raspy
 
 const speaker = new Speaker(format)
 
-gs.on('ready', () => {
-	console.log('ready p1')
+const writer = new wav.Writer(format)
 
-	setInterval(() => {
-		const data = gs.read(320)
-		console.log('read data', data)
+const outputFile = "a.wav"
+const fileStream = fs.createWriteStream(outputFile);
+
+// Pipe the WAV writer to the file stream
+writer.pipe(fileStream);
+
+//gs.on('ready', () => {
+//	console.log('ready p1')
+
+const read_write = () => {
+		const size = 320 * format.sampleRate/8000
+		var data = gs.read(size)
+		console.log('read data got', data)
 		if(data) {
+		  console.log("writing data")
 			speaker.write(data)
+			writer.write(data)
+		} else {
+      console.log("writing silence", size)
+      data = silence.gen(format, size)
+   	  speaker.write(data)
+     	writer.write(data)
 		}
-	}, 20)
-	console.log('ready p2')
-})
+}
+//	console.log('ready p2')
+//})
+//console.log("first read_write()")
+//read_write()
 
-// these two speak are clean. Why?
+setInterval(() => {
+  read_write()
+}, 20)
+
 setTimeout(() => {
 	console.log('done')
 	gs.speak(params)

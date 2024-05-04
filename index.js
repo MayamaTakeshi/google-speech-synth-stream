@@ -4,8 +4,6 @@ const fs = require("fs");
 const util = require("util");
 const uuid = require('uuid');
 
-const pushSilence = require('./silence.js')
-
 const stream = require("stream");
 
 const { Readable } = require("stream");
@@ -98,18 +96,16 @@ class GssStream extends Readable {
   _read(size) {
     console.log("_read", size)
     if(!this.read_stream) {
-      console.log("call pushSilence")
-      pushSilence(this.format, this, 320)
+      this.push(Buffer.alloc(0))
       return
     }
+
     const data = this.read_stream.read(size)
     console.log("_read got", data)
     if(data) {
       this.push(data)
-    } else {
-      //end of stream
-      this.read_stream =null
-      pushSilence(this.format, this, 320)
+    } {
+      this.push(Buffer.alloc(0))
     }
   }
 }

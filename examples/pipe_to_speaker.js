@@ -1,5 +1,6 @@
 const Speaker = require('speaker')
 const GSSS = require('../index.js')
+const au = require('@mayama/audio-utils')
 
 const format = {
   audioFormat: 1,
@@ -32,5 +33,12 @@ gs.speak({
 
 gs.on('ready', () => {
   const speaker = new Speaker(format)
+
+  // We need to write some initial silence to the speaker to avoid scratchyness/gaps
+  const size = 320 * 64 
+  console.log("writing initial silence to speaker", size)
+  data = au.gen_silence(format, size)
+  speaker.write(data)
+
   gs.pipe(speaker)
 })

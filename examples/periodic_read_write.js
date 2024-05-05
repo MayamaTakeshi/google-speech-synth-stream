@@ -2,24 +2,22 @@ const Speaker = require('speaker')
 const GSSS = require('../index.js')
 const wav = require('wav')
 const fs = require('fs')
+const au = require('@mayama/audio-utils')
 
-function gen_silence(format, size) {
-  var silence = null
-
-  if(format.audioFormat == 6) {
-    if(format.signed) {
-      silence = Buffer.alloc(size, 0x55); // ALAW silence value signed
-    } else {
-      silence = Buffer.alloc(size, 0xD5); // ALAW silence value unsigned
-    }
-  } else if(format.audioFormat == 7) {
-    silence = Buffer.alloc(size, 0xFF); // MULAW silence value
-  } else {
-    // assume L16
-    silence = Buffer.alloc(size, 0);
-  }
-  return silence;
+const usage = () => {
+  console.log(`
+Arguments: output_wav_file
+Ex:        test.wav
+`)
 }
+
+
+if (process.argv.length != 3) {
+  usage()
+  process.exit(1)
+}
+
+output_wav_file = process.argv[2]
 
 const format = {
   audioFormat: 1,
@@ -32,14 +30,6 @@ const format = {
   signed: true
 }
 
-const params = {
-	body: 'hello world',
-	headers: {
-		'speech-language': 'en-US',
-		'voice-name': 'en-US-Standard-G',
-	},
-}
-
 const config = {
 	work_dir: './tmp',
 }
@@ -50,28 +40,22 @@ const opts = {
 }
 
 const gs = new GSSS(opts)
-gs.on('speak_complete', () => {
-	console.log('gs speak_complete')
+gs.speak({
+	body: 'hello world',
+	headers: {
+		'speech-language': 'en-US',
+		'voice-name': 'en-US-Standard-G',
+	},
 })
-gs.on('error', err => {
-	console.log('gs error', err)
-})
-gs.on('end', () => {
-	console.log('gs end')
-})
-gs.speak(params) // this first speak gets raspy
 
 const speaker = new Speaker(format)
 
 const writer = new wav.Writer(format)
 
-const outputFile = "a.wav"
-const fileStream = fs.createWriteStream(outputFile);
+const fileStream = fs.createWriteStream(output_wav_file)
 
 // Pipe the WAV writer to the file stream
-writer.pipe(fileStream);
-
-var started = false
+writer.pipe(fileStream)
 
 const read_write = () => {
 		const size = 320 * format.sampleRate/8000
@@ -83,32 +67,29 @@ const read_write = () => {
 			writer.write(data)
       started = true
 		} else {
-      if(started) {
-        // no more data.
-        setTimeout(() => {
-          console.log("done")
-          writer.end(err => {
-            console.log('writer.end done', err)
-            process.exit(0)
-          })
-        }, 500)
-      }
-      console.log("writing silence", size)
-      data = gen_silence(format, size)
-   	  speaker.write(data)
-     	writer.write(data)
+      // no more data.
+      setTimeout(() => {
+        console.log("done")
+        // It see wav.FileWriter doesn't properly update the wav header with the duration of the audion when method end() is called (there is no problem if piping is used)
+        // but we will call the method anyway as we will correct this eventually.
+        writer.end(err => {
+          console.log('writer.end done', err)
+          process.exit(0)
+        })
+      }, 500)
 		}
 }
 
+gs.on('ready', () => {
+  // We need to write some initial silence to the speaker to avoid scratchyness
+  // I understand this happens because the speaker writable stream is being underfed
+  // so we need to buffer something to avoid this.
+  const size = 320 * 64 // tried with 32, 16, 8 and 4. The lower the multiplier, the more scratchynes we get
+  console.log("writing initial silence to speaker", size)
+  data = au.gen_silence(format, size)
+  speaker.write(data)
 
-// We need to write some initial silence to the speaker to avoid scratchyness
-// I understand this happens because the speaker writable stream is being underfed
-// so we need to buffer something to avoid this.
-const size = 320 * 64 // tried with 32, 16, 8 and 4. The lower the multiplier, the more scratchynes we get
-console.log("writing initial silence to speaker", size)
-data = gen_silence(format, size)
-speaker.write(data)
-
-setInterval(() => {
-  read_write()
-}, 20)
+  setInterval(() => {
+    read_write()
+  }, 20)
+})

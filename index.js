@@ -81,11 +81,9 @@ class GssStream extends Readable {
       //console.log('file end')
 
       //console.log("unlinking", this.outputFile)
-      /*
       fs.unlink(this.outputFile, err => {
         //console.log("fs.unlink cb", err)
       })
-      */
 
       this.outputFile = null
     })
@@ -98,7 +96,7 @@ class GssStream extends Readable {
   }
 
   _read(size) {
-    console.log("_read", size)
+    //console.log("_read", size)
     // by default size is 16384
     // however this large value causes wav FileWriter (https://www.npmjs.com/package/wav) to unpipe before reading all data from the readable stream
     // so we will use a smaller value
@@ -112,7 +110,7 @@ class GssStream extends Readable {
     const sz = 4096
 
     const data = this.read_stream.read(sz)
-    console.log("_read got", data)
+    //console.log("_read got", data)
     if(data) {
       this.push(data)
     } else {

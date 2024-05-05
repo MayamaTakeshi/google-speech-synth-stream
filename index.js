@@ -44,7 +44,7 @@ class GssStream extends Readable {
 
     const request = {
       input:
-        params.headers["content-type"] == "application/ssml+xml"
+        params.headers && params.headers["content-type"] == "application/ssml+xml"
           ? { ssml: params.body }
           : { text: params.body },
       voice: {

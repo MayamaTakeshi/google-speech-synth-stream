@@ -60,6 +60,8 @@ class GssStream extends Readable {
     // Performs the text-to-speech request
     const [response] = await client.synthesizeSpeech(request);
 
+    await client.close()
+
     // Write the binary audio content to a local file
     const writeFile = util.promisify(fs.writeFile);
     await writeFile(this.outputFile, response.audioContent, 'binary');

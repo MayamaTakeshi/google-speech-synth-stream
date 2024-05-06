@@ -67,19 +67,19 @@ class GssStream extends Readable {
       request = {
         input: params.startsWith('<speak>') ? { ssml: params } : { text: params },
         voice: {
-          languageCode: this.params.headers["speech-language"],
-          name: this.params.headers["voice-name"],
+          languageCode: this.params.language,
+          name: this.params.voice,
         },
       }
     } else {
       request = {
         input:
-          params.headers && params.headers["content-type"] == "application/ssml+xml"
-            ? { ssml: params.body }
-            : { text: params.body },
+          (params["content-type"] == "application/ssml+xml" || params.text.startsWith('<speak>'))
+            ? { ssml: params.text }
+            : { text: params.text },
         voice: {
-          languageCode: params.headers["speech-language"],
-          name: params.headers["voice-name"],
+          languageCode: params.language,
+          name: params.voice,
         },
       }
     }

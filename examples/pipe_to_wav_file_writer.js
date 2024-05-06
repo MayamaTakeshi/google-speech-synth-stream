@@ -34,11 +34,9 @@ const config = {
 }
 
 const params = {
-	body: 'How are you?',
-	headers: {
-		'speech-language': 'en-US',
-		'voice-name': 'en-US-Standard-G',
-	},
+	language: 'en-US',
+	voice: 'en-US-Standard-G',
+	text: 'How are you?',
 }
 
 const opts = {

@@ -18,11 +18,9 @@ const config = {
 }
 
 const params = {
-	body: 'hello world',
-	headers: {
-		'speech-language': 'en-US',
-		'voice-name': 'en-US-Standard-G',
-	},
+  language: 'en-US',
+	voice: 'en-US-Standard-G',
+	text: 'hello world',
 }
 
 const opts = {

@@ -33,19 +33,21 @@ const config = {
 	work_dir: './tmp',
 }
 
-const opts = {
-  format,
-  config,
-}
-
-const gs = new GSSS(opts)
-gs.speak({
+const params = {
 	body: 'How are you?',
 	headers: {
 		'speech-language': 'en-US',
 		'voice-name': 'en-US-Standard-G',
 	},
-})
+}
+
+const opts = {
+  format,
+  config,
+  params,
+}
+
+const gs = new GSSS(opts)
 
 gs.on('ready', () => {
   console.log('gs ready')

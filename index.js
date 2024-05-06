@@ -27,9 +27,27 @@ class GssStream extends Readable {
     this.eventEmitter = new EventEmitter();
 
     this.config = opts.config
+
+    this.params = opts.params
+
+    this.readStream = null
+    this.outputFile = null
+
+    if(this.params) {
+      this.speak()
+    }
   }
 
   async speak(params) {
+    if(this.readStream) {
+      this.readStream.close()
+      this.readStream = null
+    }
+
+    if(!params) {
+      params = this.params
+    }
+
     const client = new textToSpeech.TextToSpeechClient();
 
     const audioEncoding = AudioFormats[this.format.audioFormat];
@@ -41,21 +59,35 @@ class GssStream extends Readable {
     }
 
     this.outputFile = `${this.config.work_dir}/gsss-${this.uuid}.wav`;
+    console.log(this.outputFile)
 
-    const request = {
-      input:
-        params.headers && params.headers["content-type"] == "application/ssml+xml"
-          ? { ssml: params.body }
-          : { text: params.body },
-      voice: {
-        languageCode: params.headers["speech-language"],
-        name: params.headers["voice-name"],
-      },
-      audioConfig: {
-        audioEncoding,
-        sampleRateHertz: this.format.sampleRate,
-      },
-    };
+    var request
+
+    if(typeof params == 'string') {
+      request = {
+        input: params.startsWith('<speak>') ? { ssml: params } : { text: params },
+        voice: {
+          languageCode: this.params.headers["speech-language"],
+          name: this.params.headers["voice-name"],
+        },
+      }
+    } else {
+      request = {
+        input:
+          params.headers && params.headers["content-type"] == "application/ssml+xml"
+            ? { ssml: params.body }
+            : { text: params.body },
+        voice: {
+          languageCode: params.headers["speech-language"],
+          name: params.headers["voice-name"],
+        },
+      }
+    }
+
+    request.audioConfig = {
+      audioEncoding,
+      sampleRateHertz: this.format.sampleRate,
+    }
 
     // Performs the text-to-speech request
     const [response] = await client.synthesizeSpeech(request);
@@ -74,7 +106,7 @@ class GssStream extends Readable {
 
     reader.on('format', format => {
       //console.log('reader format', format)
-      this.read_stream = reader           
+      this.readStream = reader           
       this.eventEmitter.emit('ready')
       this.eventEmitter.emit('data', Buffer.alloc(0)) // necessary for piping
     })
@@ -83,11 +115,13 @@ class GssStream extends Readable {
       //console.log('file end')
 
       //console.log("unlinking", this.outputFile)
-      fs.unlink(this.outputFile, err => {
-        //console.log("fs.unlink cb", err)
-      })
+      if(this.outputFile) {
+        fs.unlink(this.outputFile, err => {
+          //console.log("fs.unlink cb", err)
+        })
 
-      this.outputFile = null
+        this.outputFile = null
+      }
     })
   }
 
@@ -103,15 +137,15 @@ class GssStream extends Readable {
     // however this large value causes wav FileWriter (https://www.npmjs.com/package/wav) to unpipe before reading all data from the readable stream
     // so we will use a smaller value
  
-    if(!this.read_stream) {
-      console.log("not read_stream", size)
+    if(!this.readStream) {
+      console.log("not readStream", size)
       this.push(Buffer.alloc(0))
       return
     }
 
     const sz = 4096
 
-    const data = this.read_stream.read(sz)
+    const data = this.readStream.read(sz)
     //console.log("_read got", data)
     if(data) {
       this.push(data)
@@ -119,6 +153,17 @@ class GssStream extends Readable {
       //this.push(Buffer.alloc(0))
       this.push(null)
     }
+  }
+
+  destroy(err) {
+    // Perform cleanup tasks here
+    console.log('gss stream is being destroyed')
+    if(this.outputFile) {
+      fs.unlink(this.outputFile, err => {})
+      this.outputFile = null
+    }
+    
+    super.destroy(err)
   }
 }
 

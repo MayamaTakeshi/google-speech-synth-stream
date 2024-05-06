@@ -1,6 +1,6 @@
 {
   "name": "google-speech-synth-stream",
-  "version": "1.3.1",
+  "version": "1.4.0",
   "description": "A simple node.js readable stream that permits to stream audio from google tts",
   "main": "index.js",
   "repository": {

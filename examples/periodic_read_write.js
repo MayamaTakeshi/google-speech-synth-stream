@@ -19,8 +19,10 @@ if (process.argv.length != 3) {
 
 output_wav_file = process.argv[2]
 
+const audioFormat = 1
+
 const format = {
-  audioFormat: 1,
+  audioFormat,
   endianness: 'LE',
   channels: 1,
   sampleRate: 16000,
@@ -86,7 +88,7 @@ gs.on('ready', () => {
   // so we need to buffer something to avoid this.
   const size = 320 * 64 // tried with 32, 16, 8 and 4. The lower the multiplier, the more scratchynes we get
   console.log("writing initial silence to speaker", size)
-  data = au.gen_silence(format, size)
+  data = au.gen_silence(audioFormat, true, size)
   speaker.write(data)
 
   setInterval(() => {

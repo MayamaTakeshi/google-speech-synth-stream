@@ -52,10 +52,15 @@ type State = {
   readReady: boolean,
 }
 
-enum Action {
+enum ActionType {
   START_SYNTH,
   SHUTDOWN,
   ENABLE_READ,
+}
+
+type Action = {
+  tp: ActionType,
+  payload?: any,
 }
 
 type EventCallback = (...args: any[]) => void
@@ -79,8 +84,8 @@ const remove_evt_listeners = (evtEmitter: any) => {
 }
 
 const update = (state: State, action: Action) : State => {
-  switch(action) {
-  case Action.START_SYNTH: {
+  switch(action.tp) {
+  case ActionType.START_SYNTH: {
     var readStream = state.readStream
 
     if(readStream) {
@@ -122,7 +127,7 @@ const update = (state: State, action: Action) : State => {
 
     // Performs the text-to-speech request
     client.synthesizeSpeech(request)
-    .then((response: any) => {
+    .then(([response]: any) => {
       client.close()
 
       // Write the binary audio content to a local file
@@ -133,16 +138,16 @@ const update = (state: State, action: Action) : State => {
 
         const file = fs.createReadStream(outputFile)
 
-        readStream = new wav.Reader()
+        const newReadStream = new wav.Reader()
 
-        file.pipe(readStream)
+        file.pipe(newReadStream)
 
         const on_format = (format: any) => {
           console.log("format", format) 
-          state.eventEmitter.emit('readStreamReady')
+          state.eventEmitter.emit('readStreamReady', newReadStream)
         }
         
-        add_evt_listeners(readStream, [
+        add_evt_listeners(newReadStream, [
           ["format", on_format]
         ])
       })
@@ -158,13 +163,14 @@ const update = (state: State, action: Action) : State => {
     }
 
   }
-  case Action.ENABLE_READ: {
+  case ActionType.ENABLE_READ: {
+    state.eventEmitter.emit('ready')
     return {
       ...state,
-      readReady: true,
+      readStream: action.payload
     }
   }
-  case Action.SHUTDOWN: {
+  case ActionType.SHUTDOWN: {
     if(state.outputFile) {
       fs.unlink(state.outputFile, (err: any) => {})
     }
@@ -195,12 +201,12 @@ class GoogleSpeechSynthStream extends Readable {
       readReady: false,
     }
 
-    this.state.eventEmitter.on('readStreamReady', () => {
-      this.state = update(this.state, Action.ENABLE_READ)
+    this.state.eventEmitter.on('readStreamReady', (readStream: any) => {
+      this.state = update(this.state, {tp: ActionType.ENABLE_READ, payload: readStream})
     })
 
     if(this.state.params) {
-      this.state = update(this.state, Action.START_SYNTH)
+      this.state = update(this.state, {tp: ActionType.START_SYNTH})
     }
   }
 
@@ -216,8 +222,8 @@ class GoogleSpeechSynthStream extends Readable {
     // however this large value causes wav FileWriter (https://www.npmjs.com/package/wav) to unpipe before reading all data from the readable stream
     // so we will use a smaller value
  
-    if(!this.state.readReady) {
-      //console.log("read not ready", size)
+    if(!this.state.readStream) {
+      //console.log("readStream not ready", size)
       this.push(Buffer.alloc(0))
       return
     }
@@ -225,7 +231,7 @@ class GoogleSpeechSynthStream extends Readable {
     const sz = 4096
 
     const data = this.state.readStream.read(sz)
-    console.log(`readStream.read(${sz}) got ${data}`)
+    //console.log(`readStream.read(${sz}) got`, data)
     if(data) {
       this.push(data)
     } else {
@@ -235,7 +241,7 @@ class GoogleSpeechSynthStream extends Readable {
 
   destroy(err: any) {
     console.log('gss stream is being destroyed')
-    this.state = update(this.state, Action.SHUTDOWN)
+    this.state = update(this.state, {tp: ActionType.SHUTDOWN})
    
     super.destroy(err)
   }

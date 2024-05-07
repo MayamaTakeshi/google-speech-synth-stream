@@ -2,7 +2,6 @@ const fs = require('fs')
 const wav = require('wav')
 const FileWriter = require('wav').FileWriter
 const GSSS = require('../index.js')
-const fs = require('fs')
 
 const usage = () => {
   console.log(`

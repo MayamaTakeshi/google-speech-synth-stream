@@ -138,7 +138,7 @@ class GssStream extends Readable {
     // so we will use a smaller value
  
     if(!this.readStream) {
-      console.log("not readStream", size)
+      //console.log("not readStream", size)
       this.push(Buffer.alloc(0))
       return
     }

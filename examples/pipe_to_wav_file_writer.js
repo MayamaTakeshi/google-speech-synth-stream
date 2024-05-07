@@ -2,6 +2,7 @@ const fs = require('fs')
 const wav = require('wav')
 const FileWriter = require('wav').FileWriter
 const GSSS = require('../index.js')
+const fs = require('fs')
 
 const usage = () => {
   console.log(`
@@ -31,6 +32,10 @@ const format = {
 
 const config = {
 	work_dir: './tmp',
+}
+
+if (!fs.existsSync('./tmp')) {
+  fs.mkdirSync('./tmp')
 }
 
 const params = {

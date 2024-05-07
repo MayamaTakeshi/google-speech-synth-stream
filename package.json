@@ -8,6 +8,7 @@
     "url": "git+https://github.com/MayamaTakeshi/google-speech-synth-stream.git"
   },
   "scripts": {
+    "build": "npx tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -25,15 +26,14 @@
     "wav": "^1.0.2"
   },
   "devDependencies": {
-    "@mayama/audio-utils": "^1.0.0",
-    "speaker": "^0.5.4"
+    "@mayama/audio-utils": "^1.2.0",
+    "@types/node": "^20.12.10",
+    "speaker": "^0.5.4",
+    "typescript": "^5.4.5"
   },
   "files": [
     "index.js",
-    "src",
-    "lib",
     "README.md",
-    "LICENSE",
-    "tmp/.placeholder"
+    "LICENSE"
   ]
 }

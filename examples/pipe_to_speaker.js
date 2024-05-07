@@ -1,6 +1,7 @@
 const Speaker = require('speaker')
 const GSSS = require('../index.js')
 const au = require('@mayama/audio-utils')
+const fs = require('fs')
 
 const format = {
   audioFormat: 1,
@@ -15,6 +16,10 @@ const format = {
 
 const config = {
 	work_dir: './tmp',
+}
+
+if (!fs.existsSync('./tmp')) {
+  fs.mkdirSync('./tmp')
 }
 
 const params = {

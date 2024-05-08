@@ -37,6 +37,7 @@ const params = {
 	language: 'en-US',
 	voice: 'en-US-Standard-G',
 	text: 'How are you?',
+  times: 5,
 }
 
 const opts = {

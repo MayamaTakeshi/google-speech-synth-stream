@@ -30,6 +30,7 @@ type Params = {
   language: string,
   voice: string,
   text: string,
+  times?: number,
 }
 
 type Config = Record<string, unknown>
@@ -50,10 +51,12 @@ type State = {
   outputFile: string,
   eventEmitter: any,
   readReady: boolean,
+  times: number,
 }
 
 enum ActionType {
   START_SYNTH,
+  CREATE_READ_STREAM,
   SHUTDOWN,
   ENABLE_READ,
 }
@@ -84,6 +87,7 @@ const remove_evt_listeners = (evtEmitter: any) => {
 }
 
 const update = (state: State, action: Action) : State => {
+  console.log("update", action.tp)
   switch(action.tp) {
   case ActionType.START_SYNTH: {
     var readStream = state.readStream
@@ -134,22 +138,9 @@ const update = (state: State, action: Action) : State => {
       fs.writeFile(outputFile, response.audioContent, 'binary', (err: any) => {
         if(err) {
           state.eventEmitter.emit('error', err)
+        } else {
+          state.eventEmitter.emit('fileReady')
         }
-
-        const file = fs.createReadStream(outputFile)
-
-        const newReadStream = new wav.Reader()
-
-        file.pipe(newReadStream)
-
-        const on_format = (format: any) => {
-          console.log("format", format) 
-          state.eventEmitter.emit('readStreamReady', newReadStream)
-        }
-        
-        add_evt_listeners(newReadStream, [
-          ["format", on_format]
-        ])
       })
     })
     .catch((err: any) => {
@@ -161,10 +152,38 @@ const update = (state: State, action: Action) : State => {
       outputFile,
       readStream,
     }
+  }
+  case ActionType.CREATE_READ_STREAM: {
+    var readStream = state.readStream
+    if(readStream) {
+      remove_evt_listeners(readStream)
+    }
 
+    const file = fs.createReadStream(state.outputFile)
+
+    readStream = new wav.Reader()
+
+    file.pipe(readStream)
+
+    const on_format = (format: any) => {
+      console.log("format", format) 
+      state.eventEmitter.emit('readStreamReady', readStream)
+    }
+    
+    add_evt_listeners(readStream, [
+      ["format", on_format]
+    ])
+
+    return {
+      ...state,
+      readStream: null,
+    }
   }
   case ActionType.ENABLE_READ: {
-    state.eventEmitter.emit('ready')
+    //console.log("emitting initial data")
+    // we need to send some data because when we don't have data to push in _read(size) we just do nothing and this will 
+    // prevent further calls to _read(size) till we push something again.
+    state.eventEmitter.emit('data', Buffer.alloc(0)) 
     return {
       ...state,
       readStream: action.payload
@@ -174,18 +193,22 @@ const update = (state: State, action: Action) : State => {
     if(state.outputFile) {
       fs.unlink(state.outputFile, (err: any) => {})
     }
+    if(readStream) {
+      remove_evt_listeners(state.readStream)
+      readStream = null
+    }
+ 
     return {
       ...state,
-      outputFile: ""
+      outputFile: "",
+      readStream,
     }
   }
   }
 }
 
 class GoogleSpeechSynthStream extends Readable {
-  eventEmitter: any
   state: State
-  readStream: any
 
   constructor(opts: Opts) {
     super();
@@ -199,10 +222,20 @@ class GoogleSpeechSynthStream extends Readable {
       outputFile: "",
       readStream: null,
       readReady: false,
+      times: opts.params.times ? opts.params.times : 1
     }
 
+    console.log("state", this.state)
+
+    this.state.eventEmitter.on('fileReady', () => {
+      this.state = update(this.state, {tp: ActionType.CREATE_READ_STREAM})
+    })
+
     this.state.eventEmitter.on('readStreamReady', (readStream: any) => {
+      console.log('readStreamReady')
       this.state = update(this.state, {tp: ActionType.ENABLE_READ, payload: readStream})
+      // push data to restart calls to _read(size)
+      this.push(Buffer.alloc(0))
     })
 
     if(this.state.params) {
@@ -224,7 +257,6 @@ class GoogleSpeechSynthStream extends Readable {
  
     if(!this.state.readStream) {
       //console.log("readStream not ready", size)
-      this.push(Buffer.alloc(0))
       return
     }
 
@@ -235,7 +267,13 @@ class GoogleSpeechSynthStream extends Readable {
     if(data) {
       this.push(data)
     } else {
-      this.push(null)
+      this.state.times--
+      //console.log("state.times", this.state.times)
+      if(this.state.times > 0) {
+        this.state = update(this.state, {tp: ActionType.CREATE_READ_STREAM})
+      } else {
+        this.push(null)
+      }
     }
   }
 

@@ -35,6 +35,7 @@ const params = {
   language: 'en-US',
 	voice: 'en-US-Standard-G',
 	text: 'hello world',
+  times: 2,
 }
 
 const opts = {
@@ -73,7 +74,7 @@ const read_write = () => {
           console.log('writer.end done', err)
           process.exit(0)
         })
-      }, 1500)
+      }, 2500)
 		}
 }
 

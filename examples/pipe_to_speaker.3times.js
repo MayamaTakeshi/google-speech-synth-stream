@@ -23,6 +23,7 @@ const params = {
   language: 'en-US',
 	voice: 'en-US-Standard-G',
 	text: 'hello world',
+  times: 3,
 }
 
 const opts = {
